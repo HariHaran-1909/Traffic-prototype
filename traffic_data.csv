@@ -1,0 +1,11 @@
+vehicle_count,avg_speed,congestion
+5,75,low
+10,50,medium
+20,30,high
+25,20,high
+7,65,low
+18,35,high
+12,55,medium
+15,45,medium
+22,25,high
+6,70,low

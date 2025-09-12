@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Interactive Traffic Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            background: url('static/traffic_bg.jpg') no-repeat center center fixed, linear-gradient(180deg,#c9e5ff 0%,#eeeeee 100%);
+            background-size: cover;
+            padding: 0;
+            margin: 0;
+        }
+        .navbar {
+            background: rgba(33, 37, 41, 0.85);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            padding: 14px 30px;
+        }
+        .navbar button {
+            background: #36a2eb;
+            color: #fff;
+            border: none;
+            margin-right: 15px;
+            padding: 8px 18px;
+            border-radius: 18px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+        .navbar input[type="text"] {
+            padding: 8px 12px;
+            border-radius: 12px;
+            border: none;
+            font-size: 15px;
+            width: 180px;
+            margin-left: auto;
+        }
+        .main-content {
+            background: rgba(255,255,255,0.85);
+            border-radius: 18px;
+            margin: 30px auto;
+            max-width: 700px;
+            box-shadow: 0 2px 18px #0003;
+            padding: 26px 36px 36px 36px;
+        }
+        h1 { text-align: center; margin-top: 0; }
+        .stat { font-size: 22px; margin: 13px 0; }
+        .alerthigh { background: #ffcccc; color: #b40000; font-weight: bold; padding: 12px; border-radius: 8px; margin-top: 15px; }
+        .alertmedium { background: #fff3cd; color: #856404; font-weight: bold; padding: 12px; border-radius: 8px; margin-top: 15px; }
+        .alertlow { background: #d4edda; color: #155724; font-weight: bold; padding: 12px; border-radius: 8px; margin-top: 15px; }
+        .chart-container { margin-top: 35px; margin-bottom: 20px; }
+        .material-icons { vertical-align: middle; margin-right: 8px; }
+        .action-buttons { margin-top: 20px; }
+        .action-buttons button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin-right: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .action-buttons button:hover { background: #218838; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <button onclick="window.location.reload()"><span class="material-icons">dashboard</span>Dashboard</button>
+        <button onclick="showReports()"><span class="material-icons">report</span>Reports ({{ reports_count }})</button>
+        <button onclick="document.getElementById('aboutModal').style.display='block'"><span class="material-icons">info</span>About</button>
+        <input type="text" placeholder="Search time or status..." id="searchBar" onkeyup="searchTraffic()">
+    </div>
+    <div class="main-content">
+        <h1><span class="material-icons">directions_car</span> Traffic Monitoring Dashboard</h1>
+        <div class="stat">Live Vehicle Count: <strong>{{ vehicle_count }}</strong></div>
+        <div class="stat">Estimated Average Speed: <strong>{{ avg_speed }} km/h</strong></div>
+        <div class="stat">Congestion Level: <strong>{{ congestion_level|capitalize }}</strong></div>
+        <div class="stat">Signal Override: <strong>{{ 'Active' if signal_override else 'Inactive' }}</strong></div>
+        <div class="{{ alert_class }}">{{ alert_message }}</div>
+        
+        <div class="chart-container">
+            <canvas id="vehicleChart" width="650" height="300"></canvas>
+        </div>
+        
+        <div class="action-buttons">
+            <button onclick="reportCongestion()"><span class="material-icons">report</span>Report Congestion</button>
+            <button onclick="toggleSignalOverride()"><span class="material-icons">swap_calls</span>Signal Override</button>
+        </div>
+    </div>
+     <!-- About Modal -->
+<div id="aboutModal" style="display:none;position:fixed;z-index:99;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.32)">
+  <div style="background:#fff;padding:32px 36px;max-width:520px;margin:5% auto;border-radius:18px;box-shadow:0 2px 18px #0004;position:relative">
+    <button onclick="document.getElementById('aboutModal').style.display='none'"
+      style="position:absolute;top:12px;right:20px;font-size:24px;border:none;background:none;cursor:pointer">&times;</button>
+    <h2>Smart Traffic Congestion Monitoring</h2>
+    <p>This project is a next-generation solution for real-time urban traffic management. It combines artificial intelligence and computer vision to detect vehicle flow from live video feeds, predict traffic congestion levels, and recommend adaptive signal timings for optimized road usage.</p>
+    <ul>
+      <li>Live vehicle detection using OpenCV and Machine Learning.</li>
+      <li>Real-time congestion classification (Low/Medium/High) with actionable alerts.</li>
+      <li>Dynamic analytics charts and trend analysis.</li>
+      <li>User feedback (reports) and manual override controls.</li>
+      <li>Designed for smart cities, research, and urban safety demos.</li>
+    </ul>
+    <p style="font-size:15px;color:#333;">Developed by: Hari Haran<br />Institution: [Your College/Company]</p>
+  </div>
+</div>
+
+    <script>
+        let timeLabels = {{ time_labels|tojson }};
+        let vehicleData = {{ historical_vehicle_counts|tojson }};
+        
+        const ctxVehicle = document.getElementById('vehicleChart').getContext('2d');
+        let chart = new Chart(ctxVehicle, {
+            type: 'line',
+            data: {
+                labels: timeLabels,
+                datasets: [{
+                    label: 'Vehicle Count',
+                    data: vehicleData,
+                    backgroundColor: 'rgba(54,162,235,0.2)',
+                    borderColor: 'rgba(54,162,235,1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.25
+                }]
+            },
+            options: {
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+
+        function searchTraffic() {
+            const query = document.getElementById("searchBar").value;
+            fetch(`/search_traffic?q=${query}`)
+                .then(response => response.json())
+                .then(data => {
+                    chart.data.labels = data.labels;
+                    chart.data.datasets[0].data = data.data;
+                    chart.update();
+                });
+        }
+
+        function reportCongestion() {
+            fetch('/report_congestion', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({location: 'Dashboard'})
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+            });
+        }
+
+        function toggleSignalOverride() {
+            fetch('/signal_override', {method: 'POST'})
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    setTimeout(() => window.location.reload(), 1000);
+                });
+        }
+
+        function showReports() {
+            fetch('/get_reports')
+                .then(response => response.json())
+                .then(data => {
+                    let reportText = data.reports.map(r => `${r.timestamp}: ${r.message}`).join('\n');
+                    alert(reportText || 'No reports yet');
+                });
+        }
+    </script>
+
+
+</body>
+</html>
+
+
+
+
+
+
+
