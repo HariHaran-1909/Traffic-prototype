@@ -34,7 +34,7 @@ def load_recent_entries(n=20):
 def vehicle_detection_thread():
     global vehicle_count_global
     car_cascade = cv2.CascadeClassifier('cars.xml')
-    cap = cv2.VideoCapture('traffic_video.mp4')
+    cap = cv2.VideoCapture('traffic_video2.mp4')
     
     while cap.isOpened():
         ret, frame = cap.read()
