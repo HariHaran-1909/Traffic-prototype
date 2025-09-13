@@ -47,6 +47,18 @@
             box-shadow: 0 2px 18px #0003;
             padding: 26px 36px 36px 36px;
         }
+        .signal-box {
+    font-size: 20px;
+    font-weight: bold;
+    padding: 12px;
+    border-radius: 10px;
+    display: inline-block;
+    margin-top: 10px;
+        }
+.red { background: #ffcccc; color: #b40000; }
+.yellow { background: #fff3cd; color: #856404; }
+.green { background: #d4edda; color: #155724; }
+
         h1 { text-align: center; margin-top: 0; }
         .stat { font-size: 22px; margin: 13px 0; }
         .alerthigh { background: #ffcccc; color: #b40000; font-weight: bold; padding: 12px; border-radius: 8px; margin-top: 15px; }
@@ -66,6 +78,8 @@
             font-size: 14px;
         }
         .action-buttons button:hover { background: #218838; }
+
+        
     </style>
 </head>
 <body>
@@ -81,9 +95,15 @@
         <div class="stat">Estimated Average Speed: <strong>{{ avg_speed }} km/h</strong></div>
         <div class="stat">Congestion Level: <strong>{{ congestion_level|capitalize }}</strong></div>
         <div class="stat">Signal Override: <strong>{{ 'Active' if signal_override else 'Inactive' }}</strong></div>
-        <div class="{{ alert_class }}">{{ alert_message }}</div>
-        
-        <div class="chart-container">
+        <div class="stat">
+        <span class="signal-box {% if 'Red' in signal_color %}red{% elif 'Yellow' in signal_color %}yellow{% else %}green{% endif %}">
+        {{ signal_color }} – {{ signal_time }}
+        </span>
+        </div>
+        <div class="{{ alert_class }}">{{ alert_message }}
+    </div>
+    
+    <div class="chart-container">
             <canvas id="vehicleChart" width="650" height="300"></canvas>
         </div>
         
@@ -93,22 +113,22 @@
         </div>
     </div>
      <!-- About Modal -->
-<div id="aboutModal" style="display:none;position:fixed;z-index:99;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.32)">
-  <div style="background:#fff;padding:32px 36px;max-width:520px;margin:5% auto;border-radius:18px;box-shadow:0 2px 18px #0004;position:relative">
-    <button onclick="document.getElementById('aboutModal').style.display='none'"
-      style="position:absolute;top:12px;right:20px;font-size:24px;border:none;background:none;cursor:pointer">&times;</button>
-    <h2>Smart Traffic Congestion Monitoring</h2>
-    <p>This project is a next-generation solution for real-time urban traffic management. It combines artificial intelligence and computer vision to detect vehicle flow from live video feeds, predict traffic congestion levels, and recommend adaptive signal timings for optimized road usage.</p>
-    <ul>
-      <li>Live vehicle detection using OpenCV and Machine Learning.</li>
-      <li>Real-time congestion classification (Low/Medium/High) with actionable alerts.</li>
-      <li>Dynamic analytics charts and trend analysis.</li>
-      <li>User feedback (reports) and manual override controls.</li>
-      <li>Designed for smart cities, research, and urban safety demos.</li>
-    </ul>
-    <p style="font-size:15px;color:#333;">Developed by: Hari Haran<br />Institution: [Your College/Company]</p>
+    <div id="aboutModal" style="display:none;position:fixed;z-index:99;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.32)">
+    <div style="background:#ffffffe4;padding:32px 36px;max-width:520px;margin:5% auto;border-radius:18px;box-shadow:0 2px 18px #0004;position:relative">
+        <button onclick="document.getElementById('aboutModal').style.display='none'"
+         style="position:absolute;top:12px;right:20px;font-size:24px;border:none;background:none;cursor:pointer">&times;</button>
+        <h2>Smart Traffic Congestion Monitoring</h2>
+        <p>This project is a next-generation solution for real-time urban traffic management. It combines artificial intelligence and computer vision to detect vehicle flow from live video feeds, predict traffic congestion levels, and recommend adaptive signal timings for optimized road usage.</p>
+        <ul>
+        <li>Live vehicle detection using OpenCV and Machine Learning.</li>
+        <li>Real-time congestion classification (Low/Medium/High) with actionable alerts.</li>
+        <li>Dynamic analytics charts and trend analysis.</li>
+        <li>User feedback (reports) and manual override controls.</li>
+        <li>Designed for smart cities, research, and urban safety demos.</li>
+        </ul>
+        <p style="font-size:15px;color:#333;"></p>
   </div>
-</div>
+  </div>
 
     <script>
         let timeLabels = {{ time_labels|tojson }};
@@ -158,6 +178,8 @@
                 alert(data.message);
             });
         }
+// Add the rest of the timer/cycle logic from previous instructions
+
 
         function toggleSignalOverride() {
             fetch('/signal_override', {method: 'POST'})
@@ -176,6 +198,8 @@
                     alert(reportText || 'No reports yet');
                 });
         }
+
+
     </script>
 
 

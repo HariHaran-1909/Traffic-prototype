@@ -34,7 +34,7 @@ def load_recent_entries(n=20):
 def vehicle_detection_thread():
     global vehicle_count_global
     car_cascade = cv2.CascadeClassifier('cars.xml')
-    cap = cv2.VideoCapture('traffic_video2.mp4')
+    cap = cv2.VideoCapture('traffic_video3.mp4')
     
     while cap.isOpened():
         ret, frame = cap.read()
@@ -64,14 +64,30 @@ def dashboard():
     elif congestion == 'high':
         alert_message = "⚠️ Heavy congestion detected. Please consider alternate routes!"
         alert_class = "alerthigh"
+        
     elif congestion == 'medium':
         alert_message = "⚡ Moderate congestion. Drive carefully."
         alert_class = "alertmedium"
+       
+        
     else:
         alert_message = "✅ Traffic is smooth. No delays!"
         alert_class = "alertlow"
 
+    if congestion == 'high':
+        signal_color = "🔴 Red"
+        signal_time = "90 seconds"
+    elif congestion == 'medium':
+        signal_color = "🟡 Yellow"
+        signal_time = "60 seconds"
+    else:
+        signal_color = "🟢 Green"
+        signal_time = "30 seconds"    
+       
+        
     time_labels, vehicle_counts = load_recent_entries(20)
+
+    # Example congestion-based timing logic:
 
     return render_template(
         'dashboard.html',
@@ -83,8 +99,13 @@ def dashboard():
         time_labels=time_labels,
         historical_vehicle_counts=vehicle_counts,
         signal_override=signal_override,
-        reports_count=len(reports)
+        reports_count=len(reports),
+        signal_color=signal_color,
+        signal_time=signal_time
+        
     )
+    
+
 
 @app.route('/vehicle_count')
 def vehicle_count_api():
@@ -134,6 +155,8 @@ def toggle_signal_override():
 @app.route('/get_reports')
 def get_reports():
     return jsonify(reports=reports[-5:])  # Return last 5 reports
+
+
 
 
 if __name__ == "__main__":
