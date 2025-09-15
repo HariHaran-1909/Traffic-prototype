@@ -131,8 +131,8 @@
   </div>
 
     <script>
-        let timeLabels = {{ time_labels|tojson }};
-        let vehicleData = {{ historical_vehicle_counts|tojson }};
+        let timeLabels = {{ time_labels | tojson | safe }};
+        let vehicleData = {{ historical_vehicle_counts | tojson |safe }};
         
         const ctxVehicle = document.getElementById('vehicleChart').getContext('2d');
         let chart = new Chart(ctxVehicle, {

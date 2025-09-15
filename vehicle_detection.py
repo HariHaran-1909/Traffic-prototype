@@ -1,20 +1,36 @@
 import cv2
 
-# Load pre-trained Haar Cascade for cars
-car_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_car.xml')
+car_cascade = cv2.CascadeClassifier('cars.xml')
 
-def detect_vehicles(image_path):
-    img = cv2.imread(image_path)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+def detect_vehicles(frame):
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    cars = car_cascade.detectMultiScale(gray, 1.1, 2)
+    return len(cars), cars
 
-    cars = car_cascade.detectMultiScale(gray, 1.1, 1)
+def main():
+    cap = cv2.VideoCapture('traffic_video3.mp4')  
 
-    for (x, y, w, h) in cars:
-        cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
 
-    cv2.imshow('Vehicle Detection', img)
-    cv2.waitKey(0)
+        count, cars = detect_vehicles(frame)
+
+        for (x, y, w, h) in cars:
+            cv2.rectangle(frame, (x,y), (x+w, y+h), (0,255,0), 2)
+
+        cv2.putText(frame, f'Vehicles: {count}', (10, 30), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
+
+        cv2.imshow('Vehicle Detection', frame)
+
+        if cv2.waitKey(1) == 27:  
+            break
+
+    cap.release()
     cv2.destroyAllWindows()
 
-if __name__ == '__main__':
-    detect_vehicles('traffic_sample.jpg')  # Replace with your own image filename
+if __name__ == "__main__":
+    main()
+
