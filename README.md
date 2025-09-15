@@ -119,13 +119,6 @@ Python 3.7+
 
 pip package manager
 
-Installation
-
-Clone the repository:
-
-git clone https://github.com/yourusername/Smart-Traffic-Congestion-System.git
-cd Smart-Traffic-Congestion-System
-
 
 Install dependencies:
 
