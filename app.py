@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, redirect, url_for, flash, session
 import threading
 import cv2
 import time
@@ -8,7 +8,15 @@ import os
 from datetime import datetime
 
 app = Flask(__name__)
+app.secret_key = "secret123"  # Needed for session & flash messages
 
+# ---------- Prototype users ----------
+users = {
+    "citizen1": {"password": "citizen123", "role": "citizen"},
+    "operator1": {"password": "operator123", "role": "operator"}
+}
+
+# ---------- Traffic data & model ----------
 vehicle_count_global = 0
 model = joblib.load('congestion_model.pkl')
 label_map = {0: 'low', 1: 'medium', 2: 'high'}
@@ -16,6 +24,7 @@ CSV_FILE = 'traffic_history.csv'
 reports = []  # Store user reports
 signal_override = False  # Manual signal override status
 
+# ---------- Helper functions ----------
 def save_traffic_entry(vehicle_count):
     file_exists = os.path.isfile(CSV_FILE)
     with open(CSV_FILE, 'a', newline='') as f:
@@ -31,6 +40,7 @@ def load_recent_entries(n=20):
     df = df.tail(n)
     return list(df['timestamp']), list(df['vehicle_count'])
 
+# ---------- Vehicle detection thread ----------
 def vehicle_detection_thread():
     global vehicle_count_global
     car_cascade = cv2.CascadeClassifier('cars.xml')
@@ -50,26 +60,48 @@ def vehicle_detection_thread():
 
     cap.release()
 
+# ---------- Routes ----------
+@app.route('/login', methods=['GET','POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = users.get(username)
+        if user and user['password'] == password:
+            session['username'] = username
+            session['role'] = user['role']
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid username or password', 'error')
+            return redirect(url_for('login'))
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
 @app.route('/')
 def dashboard():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    role = session.get('role', 'citizen')
     avg_speed = 45
     X_pred = [[vehicle_count_global, avg_speed]]
     pred = model.predict(X_pred)[0]
     congestion = label_map[pred]
 
-    # Alert logic with signal override consideration
+    # Alert logic
     if signal_override:
         alert_message = "🔧 Manual signal override active. Operator control enabled."
         alert_class = "alertmedium"
     elif congestion == 'high':
         alert_message = "⚠️ Heavy congestion detected. Please consider alternate routes!"
         alert_class = "alerthigh"
-        
     elif congestion == 'medium':
         alert_message = "⚡ Moderate congestion. Drive carefully."
         alert_class = "alertmedium"
-       
-        
     else:
         alert_message = "✅ Traffic is smooth. No delays!"
         alert_class = "alertlow"
@@ -82,15 +114,13 @@ def dashboard():
         signal_time = "60 seconds"
     else:
         signal_color = "🟢 Green"
-        signal_time = "30 seconds"    
-       
-        
-    time_labels, vehicle_counts = load_recent_entries(20)
+        signal_time = "30 seconds"
 
-    # Example congestion-based timing logic:
+    time_labels, vehicle_counts = load_recent_entries(20)
 
     return render_template(
         'dashboard.html',
+        role=role,
         vehicle_count=vehicle_count_global,
         avg_speed=avg_speed,
         congestion_level=congestion,
@@ -98,14 +128,11 @@ def dashboard():
         alert_class=alert_class,
         time_labels=time_labels,
         historical_vehicle_counts=vehicle_counts,
-        signal_override=signal_override,
         reports_count=len(reports),
         signal_color=signal_color,
-        signal_time=signal_time
-        
+        signal_time=signal_time,
+        signal_override=signal_override
     )
-    
-
 
 @app.route('/vehicle_count')
 def vehicle_count_api():
@@ -113,25 +140,20 @@ def vehicle_count_api():
 
 @app.route('/search_traffic')
 def search_traffic():
-    query = request.args.get('q', '').lower()
+    query = request.args.get('q','').lower()
     time_labels, vehicle_counts = load_recent_entries(50)
-    
     if not query:
         return jsonify(labels=time_labels, data=vehicle_counts)
-    
-    # Filter data based on search query
-    filtered_labels = []
-    filtered_data = []
-    
-    for i, label in enumerate(time_labels):
-        if (query in label.lower() or 
+
+    filtered_labels, filtered_data = [], []
+    for i,label in enumerate(time_labels):
+        if (query in label.lower() or
             query in str(vehicle_counts[i]) or
-            (query == 'high' and vehicle_counts[i] > 15) or
-            (query == 'medium' and 5 <= vehicle_counts[i] <= 15) or
-            (query == 'low' and vehicle_counts[i] < 5)):
+            (query=='high' and vehicle_counts[i]>15) or
+            (query=='medium' and 5<=vehicle_counts[i]<=15) or
+            (query=='low' and vehicle_counts[i]<5)):
             filtered_labels.append(label)
             filtered_data.append(vehicle_counts[i])
-    
     return jsonify(labels=filtered_labels, data=filtered_data)
 
 @app.route('/report_congestion', methods=['POST'])
@@ -140,7 +162,7 @@ def report_congestion():
     user_report = {
         'timestamp': datetime.now().strftime('%H:%M:%S'),
         'message': 'User reported unusual congestion',
-        'location': request.json.get('location', 'Unknown')
+        'location': request.json.get('location','Unknown')
     }
     reports.append(user_report)
     return jsonify(status='success', message='Report submitted successfully!')
@@ -154,16 +176,21 @@ def toggle_signal_override():
 
 @app.route('/get_reports')
 def get_reports():
-    return jsonify(reports=reports[-5:])  # Return last 5 reports
+    return jsonify(reports=reports[-5:])  # Last 5 reports
 
-
-
-
+# ---------- Run app ----------
 if __name__ == "__main__":
     t = threading.Thread(target=vehicle_detection_thread)
     t.daemon = True
     t.start()
     app.run(debug=True)
+
+
+
+
+
+
+
 
 
 
