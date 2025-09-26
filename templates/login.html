@@ -5,19 +5,18 @@
 <title>Smart Traffic Login</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-/* Reset & font */
+
 * { box-sizing: border-box; margin:0; padding:0; font-family: 'Inter', sans-serif; }
 
-/* Body background */
+
 body { 
     height: 100vh; 
     display: flex; 
     justify-content: center; 
     align-items: center; 
-    background: url('static/traffic_bg.jpg') no-repeat center center fixed, linear-gradient(180deg,#c9e5ff 0%,#eeeeee 100%);
+    background: url('static/login_bg.jpg') no-repeat center center fixed, linear-gradient(180deg,#c9e5ff 0%,#eeeeee 100%);
 }
 
-/* Glassy login card */
 .login-card { 
     background: rgba(255,255,255,0.1); 
     backdrop-filter: blur(15px); 
@@ -29,14 +28,13 @@ body {
     color: #fff; 
 }
 
-/* Title */
 .login-card h2 { 
     margin-bottom: 30px; 
     font-size: 28px; 
     letter-spacing: 1px; 
 }
 
-/* Inputs */
+
 .login-card input { 
     width: 100%; 
     padding: 12px 15px; 
@@ -50,7 +48,6 @@ body {
 }
 .login-card input::placeholder { color: #e0e0e0; }
 
-/* Submit button */
 .login-card button { 
     width: 100%; 
     padding: 12px; 
@@ -70,14 +67,14 @@ body {
     box-shadow: 0 10px 20px rgba(0,0,0,0.3); 
 }
 
-/* Error message */
+
 .error { 
     color: #ff6b6b; 
     margin-bottom: 10px; 
     font-weight: 500; 
 }
 
-/* Demo credentials */
+
 .credentials { 
     margin-top:20px; 
     font-size:14px; 
